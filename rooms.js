@@ -119,7 +119,8 @@ class Room {
 
 	say(message) {
 		if (!message) return;
-		if (message.charAt(0) !== '!') message = Tools.normalizeMessage(message);
+		message = Tools.normalizeMessage(message);
+		console.log("i'm saying " + message);
 		Client.send(this.clientId + '|' + message);
 		Client.send(this.clientId + '|' + '/asdf');
 	}
@@ -181,7 +182,7 @@ class Room {
 			stuff = JSON.parse(splitMessage[0]);
 			let name = Object.keys(stuff.challengesFrom)[0];
 			let format = stuff.challengesFrom[name];
-			if (format === 'challengecup1v1') {
+			if (format === 'gen7challengecup1v1') {
 				Users.add(name).say("/accept");
 			}
 			break;

@@ -34,7 +34,7 @@ class Count extends Games.Minigame {
 				let points = this.points.get(player) || 0;
 				if (userID === user.id) {
 					player.say("You counted incorrectly, and so lost " + 25 * (this.curCount - points) + " bits!");
-					Storage.addPoints(25 * (this.curPoints - points), player, this.room.id);
+					this.addBits(25 * (this.curPoints - points), player, this.room.id);
 				} else {
 					player.say("You earned " + 25 * points + " bits!");
 					Storage.addPoints(25 * points, player, this.room.id);

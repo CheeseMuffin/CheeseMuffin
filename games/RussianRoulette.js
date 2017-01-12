@@ -1,7 +1,7 @@
 'use strict';
 
 const name = "Russian Roulette";
-const description = "Players bet";
+const description = "Players pick a number between 1-7 and gain points based on what number they pick. If you pick a lower number the higher your chance is of winning but the lower your points. 7 is an auto loss";
 const id = Tools.toId(name);
 
 class RussianRoulette extends Games.Game {
@@ -11,6 +11,15 @@ class RussianRoulette extends Games.Game {
 		this.description = description;
 		this.id = id;
 		this.points = new Map();
+	}
+
+	getRandomOrdering(players) {
+		let order = Tools.shuffle(Object.keys(players));
+		let realOrder = [];
+		for (let i = 0; i < order.length; i++) {
+			realOrder.push(players[order[i]]);
+		}
+		return realOrder;
 	}
 
 	onStart() {
@@ -23,26 +32,20 @@ class RussianRoulette extends Games.Game {
 			this.end();
 			return;
 		}
-		this.order = this.getRandomOrdering();
-		let strs = [];
-		for (let i = 0; i < this.order.length; i++) {
-			let player = this.order[i];
-			let points = this.points.get(player) || 0;
-			strs.push(player.name + (points > 0 ? "(" + points + ")" : ""));
-		}
-		this.say("**Players (" + this.getRemainingPlayerCount() + "):** " + strs.join(", "));
+		this.order = this.getRandomOrdering(this.getRemainingPlayers());
+		this.say("**Players (" + this.getRemainingPlayerCount() + "):** " + this.getPoints(this.getRemainingPlayers()));
 		this.nextPlayer();
 	}
 
 	nextPlayer() {
 		if (this.canBid) {
 			this.say(this.curPlayer.name + " didn't bid and is eliminated!");
+			this.curPlayer.eliminated = true;
 		}
 		if (this.order.length === 0) {
 			this.nextRound();
 		} else {
-			this.curPlayer = this.order[0];
-			this.order.splice(0, 1);
+			this.curPlayer = this.order.shift();
 			this.canBid = true;
 			this.say(this.curPlayer.name + " you're up! Please bid a number between 1 and 6.");
 			this.timeout = setTimeout(() => this.nextPlayer(), 30 * 1000);
@@ -67,11 +70,11 @@ class RussianRoulette extends Games.Game {
 			points += bid;
 			if (points >= 15) {
 				this.say("The randomly chosen number is " + num + "! " + this.curPlayer.name + " has reached 15 points and wins!");
-				Storage.addPoints(500, this.curPlayer, this.room.id);
+				this.addBits(500, this.curPlayer);
 				this.end();
 				return;
 			} else {
-				this.say("The randomly chosen number is " + num + "! " + this.curPlayer.name + " advances to " + points + " points.");
+				this.say("The randomly chosen number is " + num + "! " + this.curPlayer.name + " advances to " + points + " point" + (points > 1 ? "s" : "") + ".");
 				this.points.set(this.curPlayer, points);
 				this.timeout = setTimeout(() => this.nextPlayer(), 5 * 1000);
 			}

@@ -10,16 +10,6 @@
 'use strict';
 const fs = require('fs');
 let commands = {
-	js: 'eval',
-	eval: function (target, room, user) {
-		if (!user.isDeveloper()) return;
-		try {
-			target = eval(target);
-			this.say(JSON.stringify(target));
-		} catch (e) {
-			this.say(e.name + ": " + e.message);
-		}
-	},
 	gamesignups: 'signups',
 	signups: function (target, room, user) {
 		if (!user.isDeveloper() && !user.hasRank(room, '+')) return;
@@ -28,6 +18,7 @@ let commands = {
 		Games.createGame(target, room);
 		room.game.signups();
 	},
+	deal: 'start',
 	startgame: 'start',
 	start: function (target, room, user) {
 		if ((!user.isDeveloper() && !user.hasRank(room, '+')) || !room.game) return;
@@ -193,21 +184,6 @@ let commands = {
 		if (typeof room.game.guess === 'function') room.game.guess(target, user);
 	},
 
-	bid: function (target, room, user) {
-		if (!room.game) return;
-		if (typeof room.game.bid === 'function') room.game.bid(target, user);
-	},
-
-	wager: function (target, room, user) {
-		if (!room.game) return;
-		if (typeof room.game.wager === 'function') room.game.wager(target, user);
-	},
-
-	select: function (target, room, user) {
-		if (!room.game) return;
-		if (typeof room.game.select === 'function') room.game.select(target, user);
-	},
-
 	r: 'roll',
 	roll: function (target, room, user) {
 		if (!room.game) return;
@@ -230,10 +206,22 @@ let commands = {
 		if (typeof room.game.leave === 'function') room.game.leave(user);
 	},
 
+	wager: function (target, room, user) {
+		if (!room.game) return;
+		if (typeof room.game.wager === 'function') room.game.wager(target, user);
+	},
+
 	choose: function (target, room, user) {
 		for (room in Rooms.rooms) {
 			let realRoom = Rooms.rooms[room];
 			if (realRoom.game && typeof realRoom.game.choose === 'function') realRoom.game.choose(user, target);
+		}
+	},
+
+	select: function (target, room, user) {
+		for (room in Rooms.rooms) {
+			let realRoom = Rooms.rooms[room];
+			if (realRoom.game && typeof realRoom.game.select === 'function') realRoom.game.select(target, user);
 		}
 	},
 
@@ -312,6 +300,11 @@ let commands = {
 		if (typeof room.game.play === 'function') room.game.play(target, user);
 	},
 
+	bid: function (target, room, user) {
+		if (!room.game) return;
+		if (typeof room.game.bid === 'function') room.game.bid(target, user);
+	},
+
 	coins: function (target, room, user) {
 		if (!room.game) return;
 		if (typeof room.game.getCoins === 'function') room.game.getCoins(user);
@@ -337,7 +330,7 @@ let commands = {
 		if (typeof room.game.buy === 'function') room.game.buy(target, user);
 	},
 
-	guessExclude: 'ge',
+	guessexclude: 'ge',
 	ge: function (target, room, user) {
 		if (!room.game) return;
 		if (typeof room.game.ge === 'function') room.game.ge(target, user);
@@ -414,7 +407,7 @@ let commands = {
 	},
 
 	mashup: function (target, room, user) {
-		if ((!user.hasRank(room, '+') && room !== user) || room.game) return;
+		if (!user.hasRank(room, '+') || room.game) return;
 		Games.createMiniGame("mashup", room);
 	},
 
@@ -449,20 +442,55 @@ let commands = {
 	topbits: 'top',
 	top: function (target, room, user) {
 		if (!user.hasRank(room, '+') && room !== user) return;
-		if (!target) target = 'groupchat-ladymonita-theworkshop';
-		if (!(target in Storage.databases) || !('leaderboard' in Storage.databases[target])) return;
-		let items = Object.keys(Storage.databases[target].leaderboard).map(function (key) {
-			return [key, Storage.databases[target].leaderboard[key].points];
-		});
+		let targetRoom = target ? target.toLowerCase() : room.id;
+		let items = [];
+		let database = Storage.databases[targetRoom];
+		if (!database) {
+			return room.say("Invalid room");
+		}
+		for (let i in Storage.databases[targetRoom].leaderboard) {
+			items.push([Storage.databases[targetRoom].leaderboard[i].name, Storage.databases[targetRoom].leaderboard[i].points]);
+		}
 		let strs = [];
 		let realNum = 5;
 		if (realNum > items.length) {
 			realNum = items.length;
 		}
+		items.sort(function (first, second) {
+			return second[1] - first[1];
+		});
 		for (let i = Math.max(0, realNum - 5); i < realNum; i++) {
 			strs.push(i + 1 + Tools.getSuffix(i + 1) + ": __" + items[i][0] + "__(" + items[i][1] + ")");
 		}
 		room.say("``Top " + realNum + " of " + items.length + "``: " + strs.join(", "));
+		/*fs.readFile('bits.txt', function (err, data) {
+			if (err) {
+				console.error(err);
+			}
+			data = JSON.parse(data);
+			let items = Object.keys(data).map(function (key) {
+				return [key, data[key]];
+			});
+			items.sort(function (first, second) {
+				return second[1] - first[1];
+			});
+			let strs = [];
+			let realNum = 5;
+			let realTarget = Math.floor(target);
+			if (realTarget) {
+				realNum = realTarget;
+			}
+			if (realNum < 5) {
+				realNum = 5;
+			}
+			if (realNum > items.length) {
+				realNum = items.length;
+			}
+			for (let i = Math.max(0, realNum - 5); i < realNum; i++) {
+				strs.push(i + 1 + Tools.getSuffix(i + 1) + ": __" + items[i][0] + "__(" + items[i][1] + ")");
+			}
+			room.say("``Top " + realNum + " of " + items.length + "``: " + strs.join(", "));
+		});*/
 	},
 
 	chieve: function (target, room, user) {
@@ -489,6 +517,37 @@ let commands = {
 	say: function (target, room, user) {
 		if (!user.isDeveloper()) return;
 		room.say(target);
+	},
+
+	timer: function (target, room, user) {
+		if (!user.hasRank(room, '+')) return;
+		if (target === "end") {
+			if (Games.isTimer) {
+				clearTimeout(Games.timeout);
+				room.say("The timer has been ended.");
+				Games.isTimer = false;
+			} else {
+				room.say("There is no timer running!");
+			}
+			return;
+		}
+		let x = Math.floor(target);
+		if (!x || x > 300 || (x < 10 && x > 5) || x <= 0) return this.say("The timer must be between 10 seconds and 2 minutes.");
+		if (x < 10) x *= 60;
+		let minutes = Math.floor(x / 60);
+		let seconds = x % 60;
+		clearTimeout(Games.timeout);
+		room.say("Timer set for " + (minutes > 0 ? ((minutes) + " minute" + (minutes > 1 ? "s" : "")) + (seconds > 0 ? " and " : "") : "") + (seconds > 0 ? ((seconds) + " second" + (seconds > 1 ? "s" : "")) : "") + ".");
+		Games.timeout = setTimeout(() => Games.timer(room), x * 1000);
+		Games.isTimer = true;
+	},
+
+	roomsay: function (target, room, user) {
+		if (user !== room || !user.isDeveloper()) return;
+		let split = target.split(",");
+		let realRoom = Rooms.get(split[0]);
+		if (!realRoom) return;
+		realRoom.say(split[1]);
 	},
 
 	chieves: function (target, room, user) {

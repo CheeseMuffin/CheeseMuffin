@@ -8,11 +8,15 @@
  */
 
 'use strict';
-
 const fs = require('fs');
-
 global.Tools = require('./tools.js');
-
+for (let i in Tools.data.pokedex) {
+	let mon = Tools.data.pokedex[i];
+	let x = mon.weightkg / mon.heightm;
+	if (mon.weightkg === 420) {
+		console.log(mon.species);
+	}
+}
 try {
 	fs.accessSync('./config.js');
 } catch (e) {
@@ -36,10 +40,13 @@ global.Games = require('./games.js');
 Games.loadGames();
 
 global.Storage = require('./storage.js');
+
 Storage.importDatabases();
 
 global.Commands = require('./commands.js');
+
 global.Tournaments = require('./tournaments.js');
+
 global.Battles = require('./Battles.js');
 
 let plugins = fs.readdirSync('./plugins');
@@ -53,6 +60,7 @@ for (let i = 0, len = plugins.length; i < len; i++) {
 	}
 	if (file.commands) Object.assign(Commands, file.commands);
 }
+
 
 if (require.main === module) {
 	Client.connect();

@@ -63,6 +63,7 @@ class Sheep extends Games.Game {
 				player.say("You collected " + points + " sheep!");
 				if (points > max) {
 					bestID = [player.name];
+					max = points;
 				} else if (points === max) {
 					bestID.push(player.name);
 				}

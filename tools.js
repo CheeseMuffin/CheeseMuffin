@@ -71,6 +71,8 @@ class Tools {
 		if (text.length > 300) {
 			if (text.substr(text.length - 2, 2) === "__") {
 				text = text.substr(0, 295) + "__...";
+			} else if (text.substr(text.length - 3, 3) === "__)") {
+				text = text.substr(0, 294) + "__...)";
 			} else {
 				text = text.substr(0, 297) + "...";
 			}

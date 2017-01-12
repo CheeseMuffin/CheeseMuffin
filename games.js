@@ -14,7 +14,6 @@ const data = {};
 const monForms = {};
 for (let i in Tools.data.pokedex) {
 	let mon = Tools.data.pokedex[i];
-	if (mon.num < 1) continue;
 	let species = mon.species;
 	data[species] = {};
 	data[species]["stuff"] = [mon.color];
@@ -29,13 +28,7 @@ for (let i in Tools.data.pokedex) {
 			monForms[mon.otherFormes[j]] = species;
 		}
 	}
-	let gen = Tools.generation(mon.num);
-	if (mon.formeLetter === "M") {
-		gen = 6;
-	} else if (mon.formeLetter === "A") {
-		gen = 7;
-	}
-	data[species]["stuff"].push(gen);
+	data[species]["stuff"].push(Tools.generation(mon.num));
 	if (species === "Smeargle") {
 		data[species]["Pokemon Moves"] = [];
 		for (let move in Tools.data.moves) {
@@ -265,6 +258,33 @@ class Game {
 		return count;
 	}
 
+	getPlayerNames(players) {
+		if (!players) players = this.players;
+		let names = [];
+		for (let i in players) {
+			names.push(players[i].name);
+		}
+		return names.join(", ");
+	}
+
+	getPoints(players) {
+		if (!players) players = this.players;
+		let list = [];
+		for (let i in players) {
+			let points = this.points.get(players[i]);
+			list.push(players[i].name + (points ? "(" + points + ")" : ""));
+		}
+		return list.join(", ");
+	}
+
+	addBits(bits, user) {
+		Storage.addPoints(bits, user, this.room.id);
+	}
+
+	removeBits(bits, user) {
+		Storage.removePoints(bits, user, this.room.id);
+	}
+
 	shufflePlayers(players) {
 		if (!players) players = this.players;
 		let list = [];
@@ -277,10 +297,9 @@ class Game {
 	pl() {
 		let players = [];
 		for (let userID in this.players) {
-			if (this.players[userID].eliminated) continue;
 			players.push(this.players[userID].name);
 		}
-		this.room.say("**Players (" + this.getRemainingPlayerCount() + ")**: " + players.join(", "));
+		this.room.say("**Players (" + this.playerCount + ")**: " + players.join(", "));
 	}
 	handlehtml(message) {
 		message = message[0];
@@ -296,6 +315,7 @@ class Game {
 			message = message.substr(0, message.length - 6);
 			if (typeof this.handlePick === 'function') this.handlePick(message);
 		}
+		return;
 	}
 }
 
@@ -322,6 +342,10 @@ class GamesManager {
 
 	onLoad() {
 		this.loadGames();
+	}
+
+	timer(room) {
+	    room.say("**Time's up!**");
 	}
 
 	loadGame(fileName) {
@@ -505,7 +529,6 @@ class GamesManager {
 									found = true;
 								}
 							} else {
-								console.log(paramsList.join(", ") + " " + mon);
 								found = true;
 							}
 							if (found) break;

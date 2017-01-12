@@ -13,7 +13,8 @@ class Ponyta extends Games.Game {
 		this.points = new Map();
 		this.freeJoin = true;
 		this.num = 0;
-		this.guessed = new Map();
+		this.canHit = false;
+		this.hits = new Map();
 	}
 
 	onSignups() {
@@ -21,45 +22,64 @@ class Ponyta extends Games.Game {
 	}
 
 	onNextRound() {
-		if (this.round === 21) {
+		if (this.round === 11) {
 			this.say("All Piñatas have been broken!");
+			let maxPoints = -1;
+			let bestPlayers = [];
+			for (let userID in this.players) {
+				let player = this.players[userID];
+				let points = this.points.get(player);
+				if (!points) continue;
+				if (points > maxPoints) {
+					bestPlayers = [player.name];
+					maxPoints = points;
+				} else if (points === maxPoints) {
+					bestPlayers.push(player.name);
+				}
+			}
+			if (bestPlayers.length === 0) {
+				this.say("Nobody hit any Piñatas this game!");
+			} else {
+				this.say("**Winners:** " + bestPlayers.join(", "));
+			}
 			this.end();
 			return;
 		}
-		this.guessed.clear();
+		this.hits.clear();
 		this.num = 0;
 		this.say("**Round " + this.round + "!** ");
 		this.say("The Piñata has appeared!");
 		let num1 = Math.floor(Math.random() * 6) + 1;
 		let num2 = Math.floor(Math.random() * 6) + 1;
+		this.canHit = true;
 		this.timeout = setTimeout(() => this.explodePinata(), (num1 + num2) * 1000);
 	}
 
 	explodePinata() {
 		this.say("The Piñata broke!");
+		this.canHit = false;
 		if (this.num === 0) {
 			this.say("Nobody hit the Piñata this round!");
 		} else {
 			for (let userID in this.players) {
 				let player = this.players[userID];
-				let guessNum = this.guessed.get(player);
-				if (!guessNum) continue;
+				let hitNum = this.hits.get(player);
+				if (!hitNum) continue;
 				let points = this.points.get(player) || 0;
-				this.points.set(player, points + guessNum / this.num);
-				player.say("You earned " + Math.floor(50 * guessNum / this.num) + " bits this round!");
-				Games.addBits(Math.floor(50 * guessNum / this.num), player.name);
-				Storage.addPoints(50 * guessNum / this.num, player, this.room.id);
+				let gain = Math.floor(50 * hitNum / this.num);
+				this.points.set(player, points + gain);
+				player.say("You earned " + gain + " points this round!");
 			}
 		}
 		this.timeout = setTimeout(() => this.nextRound(), 5 * 1000);
 	}
 
 	hit(target, user) {
+		if (!this.canHit) return;
 		if (!(user.id in this.players)) this.addPlayer(user);
 		let player = this.players[user.id];
-		let guess = this.guessed.get(player);
-		if (guess) return;
-		this.guessed.set(player, this.num + 1);
+		if (this.hits.has(player)) return;
+		this.hits.set(player, this.num + 1);
 		this.num++;
 	}
 }
