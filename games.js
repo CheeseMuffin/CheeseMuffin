@@ -523,6 +523,7 @@ class GamesManager {
 					for (let mon in data) {
 						if (this.follows(mon, paramsList) && monsList.indexOf(mon) === -1) {
 							let dexEntry = Tools.data.pokedex[Tools.toId(mon)];
+							
 							if (dexEntry.baseSpecies) {
 								let otherName = dexEntry.baseSpecies;
 								if (this.follows(otherName, paramsList) && monsList.indexOf(otherName) === -1) {
@@ -548,6 +549,9 @@ class GamesManager {
 						let found = false;
 						for (let mon in data) {
 							if (this.follows(mon, paramsList) && monsList.indexOf(mon) === -1) {
+								if (i === 0) {
+									console.log(paramsList.join(", ") + " " + mon);
+								}
 								let dexEntry = Tools.data.pokedex[Tools.toId(mon)];
 								if (dexEntry.baseSpecies) {
 									let otherName = dexEntry.baseSpecies;

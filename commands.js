@@ -125,7 +125,7 @@ let commands = {
 					let ans = Tools.isPort(t1, t2);
 					if (Tools.isPort(t1, t2)) {
 						user.say("A possible answer is " + ans);
-						return;
+						//return;
 					}
 				}
 			}
